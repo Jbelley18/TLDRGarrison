@@ -1,0 +1,15 @@
+## Interface: 110002
+## Title: TLDRGarrison
+## Version: 0.141
+## Notes: GuiTest for Garrison
+## Author: Justin Belley
+
+## Load the GUI module first
+GUI.lua
+TLDRGarrison.lua
+FollowerTraits.lua
+MissionLogic.lua
+FilterLogic.lua
+FollowerLogic.lua
+GUIHandler.lua
+
