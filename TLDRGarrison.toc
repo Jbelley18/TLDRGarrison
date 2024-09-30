@@ -7,9 +7,10 @@
 ## Load the GUI module first
 GUI.lua
 TLDRGarrison.lua
-FollowerTraits.lua
+# FollowerTraits.lua
 MissionLogic.lua
 FilterLogic.lua
-FollowerLogic.lua
+# FollowerLogic.lua
+Debug.lua
 GUIHandler.lua
 

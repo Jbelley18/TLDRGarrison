@@ -78,5 +78,18 @@ function TLDRGarrison.GUI.CreateMainFrame()
     startCompleteButton:SetText("Start/Complete All")
     TLDRGarrison.GUI.StartCompleteButton = startCompleteButton -- Fix the reference here
 
+    -- Create the Debug Button
+    local debugButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
+    debugButton:SetSize(100, 30)
+    debugButton:SetPoint("BOTTOMRIGHT", advancedToggleButton, "TOPRIGHT", 0, 20)  -- Adjust position if needed
+    debugButton:SetText("Debug")
+    TLDRGarrison.GUI.debugButton = debugButton
+
+    -- Show the main frame (optional, depends on your logic)
+    mainFrame:Show()
+
+    -- Print a message to confirm
+    print("Main frame and debug button created successfully")
+
     return mainFrame
 end

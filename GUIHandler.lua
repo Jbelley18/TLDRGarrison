@@ -119,7 +119,7 @@ local function OnStartCompleteButtonClick()
                 print("Filtered Mission ID:", mission.missionID)
 
                 -- Call follower selection for each filtered mission
-                TLDRGarrison.FollowerLogic.FindFollowersForMission(mission.missionID, mission.type)
+                
             end
         else
             print("No missions match the selected reward types.")

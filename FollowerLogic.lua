@@ -1,47 +1,53 @@
+-- FollowerLogic.lua
+
 -- Initialize FollowerLogic if not already initialized
 TLDRGarrison = TLDRGarrison or {}
 TLDRGarrison.FollowerLogic = TLDRGarrison.FollowerLogic or {}
 
 local FollowerTraits = TLDRGarrison.FollowerTraits
 
--- Simplified function to get the required counters for a mission
-local function GetMissionCounters(missionID)
-    -- Replace G.GetCounterInfo with C_Garrison.GetMissionEncounterIconInfo for testing
-    local counters = C_Garrison.GetMissionEncounterIconInfo(missionID)
-    if not counters then
-        print("No counters found for mission ID:", missionID)
-        return nil
-    end
-    return counters
-end
-
--- Function to print follower abilities for debugging purposes
-local function PrintFollowerAbilities(follower)
-    print("Follower ID:", follower.followerID, "Name:", follower.name, "Abilities:")
-    local ability1 = C_Garrison.GetFollowerAbilityAtIndex(follower.followerID, 1)
-    local ability2 = C_Garrison.GetFollowerAbilityAtIndex(follower.followerID, 2)
-    print("  Ability 1:", ability1)
-    print("  Ability 2:", ability2)
-end
-
--- Function to find followers with counters that match the mission requirements
-function TLDRGarrison.FollowerLogic.FindFollowersForMission(missionID, missionType)
-    print("Finding followers for mission ID:", missionID, "with mission type:", missionType)  -- Debug print
-
-    -- Get the required counters for the mission
-    local counters = FollowerTraits.GetFollowersForCounter(missionType)
-    if not counters or #counters == 0 then
-        print("No valid counters for mission type:", missionType)
+-- Function to find followers for a mission
+function TLDRGarrison.FollowerLogic.FindFollowersForMission(missionID)
+    print("Finding followers for mission ID:", missionID)
+    local mission = C_Garrison.GetBasicMissionInfo(missionID)
+    if not mission then
+        print("Mission not found for mission ID:", missionID)
         return {}
     end
 
-    -- Find followers that can counter the mission
-    local matchingFollowers = {}
-    local followers = C_Garrison.GetFollowers(1)  -- Assuming 1 is the followerTypeID for garrison
+    local mechanics = mission.mechanics
+    if not mechanics or next(mechanics) == nil then
+        print("No mechanics found for mission ID:", missionID)
+        return {}
+    end
 
+    -- Get all available followers
+    local followers = C_Garrison.GetFollowers(Enum.GarrisonFollowerType.FollowerType_6_0)
+    local matchingFollowers = {}
+
+    -- Track followers who can counter mechanics
+    local availableFollowers = {}
     for _, follower in ipairs(followers) do
-        if follower.isCollected and FollowerTraits.CanFollowerCounter(follower.followerID, missionType) then
-            table.insert(matchingFollowers, follower)
+        if follower.isCollected and not follower.status then
+            table.insert(availableFollowers, follower)
+        end
+    end
+
+    -- For each mechanic, find followers who can counter it
+    for mechanicID, mechanicInfo in pairs(mechanics) do
+        local counterFound = false
+        for index, follower in ipairs(availableFollowers) do
+            if FollowerTraits.CanFollowerCounter(follower.followerID, tonumber(mechanicID)) then
+                table.insert(matchingFollowers, follower)
+                table.remove(availableFollowers, index)  -- Remove the follower to prevent reuse
+                counterFound = true
+                break  -- Move to the next mechanic
+            end
+        end
+        if not counterFound then
+            print("No follower found to counter mechanic:", mechanicInfo.name, "(ID:", mechanicID, ")")
+            -- You can decide how to handle this case; perhaps return an empty table
+            return {}
         end
     end
 
