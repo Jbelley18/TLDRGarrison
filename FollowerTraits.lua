@@ -3,8 +3,6 @@ TLDRGarrison = TLDRGarrison or {}
 TLDRGarrison.FollowerTraits = TLDRGarrison.FollowerTraits or {}
 
 local FollowerTraits = TLDRGarrison.FollowerTraits
-local followerInfo = C_Garrison.GetFollowerInfo(garrFollowerID)
-local specID = followerInfo and followerInfo.classSpec
 
 -- Mapping of mission mechanics (threats) to the ability IDs that counter them
 FollowerTraits.Counters = {
@@ -19,56 +17,26 @@ FollowerTraits.Counters = {
     [44] = {122},     -- Magic Debuff (Dispel Magic)
     [45] = {104},     -- Powerful Enemy (Execute)
     [46] = {110},     -- Minion Swarms (Multi-Shot)
-    [48] = {125},     -- Massive Swarms (Fan of Knives)
-    [49] = {126},     -- Magic Chaos (Spell Shield)
-    [50] = {127},     -- Plague (Cleansing Flame)
-    [52] = {131},     -- Magic Shield (Shattering Throw)
-    [53] = {132},     -- Ogre's Strength (Ogre Slayer)
-    [54] = {134},     -- Beasts (Beast Slayer)
-    [57] = {136},     -- Elementals (Elemental Slayer)
-    [58] = {137},     -- Aberrations (Aberration Slayer)
-    [59] = {138},     -- Demons (Demon Slayer)
-    [60] = {139},     -- Gronn (Gronn Slayer)
-    [61] = {140},     -- Fear (Inspiring Presence)
-    [62] = {141},     -- Poison (Detox)
-    [64] = {132},     -- Ogres (Ogre Slayer)
-    [65] = {143},     -- Orcs (Orc Slayer)
-    [66] = {144},     -- Humanoids (Human Slayer)
-    [67] = {145},     -- Unique Enemy (Unique Strike)
-    
-    -- Environment Counters (from T.EnvironmentCounters)
-    [11] = {4},       -- Environment ID 11
-    [12] = {38},      -- Environment ID 12
-    [13] = {42},      -- Environment ID 13
-    [14] = {43},      -- Environment ID 14
-    [15] = {37},      -- Environment ID 15
-    [16] = {36},      -- Environment ID 16
-    [17] = {40},      -- Environment ID 17
-    [18] = {41},      -- Environment ID 18
-    [19] = {42},      -- Environment ID 19
-    [20] = {39},      -- Environment ID 20
-    [21] = {7},       -- Environment ID 21
-    [22] = {9},       -- Environment ID 22
-    [23] = {8},       -- Environment ID 23
-    [24] = {45},      -- Environment ID 24
-    [25] = {46},      -- Environment ID 25
-    [26] = {44},      -- Environment ID 26
-    [28] = {48},      -- Environment ID 28
-    [29] = {49},      -- Environment ID 29
-    [60] = {54},      -- Environment ID 60
-    [61] = {55},      -- Environment ID 61
-    [62] = {56},      -- Environment ID 62
-    [63] = {57},      -- Environment ID 63
-    [64] = {59},      -- Environment ID 64
-    [65] = {60},      -- Environment ID 65
-    [66] = {61},      -- Environment ID 66
-    [67] = {58},      -- Environment ID 67
-    
-    -- Additional Counters from SpecCounters
-    -- Since SpecCounters associates specs with counters, we need to handle this differently.
-    -- For simplicity, we'll include the counters from SpecCounters here.
-    -- Note: SpecCounters in the provided code uses indexes that may not directly map to mechanic IDs.
-    -- For the purpose of this example, we'll assume the mechanics and counters are already covered.
+    -- Add more mappings as needed
+}
+
+-- Equivalence mapping for traits
+FollowerTraits.EquivTrait = {
+    [244] = 4,     -- Trait 244 is equivalent to 4
+    [250] = 221,   -- Trait 250 is equivalent to 221
+    [228] = 48,    -- Trait 228 is equivalent to 48
+    [227] = 48,    -- Trait 227 is equivalent to 48
+    [303] = 202,   -- Trait 303 is equivalent to 202
+    [286] = 283,   -- Trait 286 is equivalent to 283
+    [293] = 292,   -- Trait 293 is equivalent to 292
+}
+
+-- Specialization counters
+FollowerTraits.SpecCounters = {
+    [2] = {1, 2, 7, 8, 10},
+    [3] = {1, 4, 7, 8, 10},
+    [4] = {1, 2, 7, 8, 10},
+    -- Add more mappings as needed
 }
 
 -- Function to get the traits of a follower
@@ -98,7 +66,7 @@ function FollowerTraits.CanFollowerCounter(garrFollowerID, mechanicID)
     -- Check abilities and traits
     for _, ability in pairs(abilities) do
         for _, counterAbilityID in ipairs(counterAbilities) do
-            if ability.id == counterAbilityID or (FollowerTraits.EquivTrait[ability.id] == counterAbilityID) then
+            if ability.id == counterAbilityID or FollowerTraits.EquivTrait[ability.id] == counterAbilityID then
                 return true
             end
         end
@@ -113,6 +81,9 @@ function FollowerTraits.CanFollowerCounter(garrFollowerID, mechanicID)
 
     return false
 end
+
+-- Additional tables and functions as needed...
+
 
 FollowerTraits.SpecCounters = {
     [2] = {1, 2, 7, 8, 10},

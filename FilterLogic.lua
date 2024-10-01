@@ -54,3 +54,5 @@ function TLDRGarrison.FilterLogic.CheckRewards(rewards, selectedRewardTypes)
     end
     return false  -- No valid rewards found
 end
+
+-- Debug function to print Filtered Missions Counter info

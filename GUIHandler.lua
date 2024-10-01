@@ -139,6 +139,25 @@ local function SetButtonHandlers()
     end
 end
 
+
+-- Handle the Debug Button Click
+local function OnDebugButtonClick()
+    local missionID = 311  -- Replace this with the mission ID you want to test
+    if _G.Debug and _G.Debug.PrintMissionInfo then
+        _G.Debug.PrintMissionInfo(missionID)  -- Call the function in Debug.lua
+    else
+        print("Debug module or PrintMissionInfo function not found.")
+    end
+end
+
+-- Set the button click handler
+local debugButton = TLDRGarrison.GUI.debugButton  -- Ensure you're using the correct reference
+if debugButton then
+    debugButton:SetScript("OnClick", OnDebugButtonClick)
+else
+    print("DebugButton is not available.")
+end
+
 -- Call this function to set button handlers during initialization
 SetButtonHandlers()
 
