@@ -1,6 +1,4 @@
 -- TLDRGarrison.lua
--- Global debug mode toggle
-_G.DEBUG_MODE = true  -- Set global debug mode for easy access in all files
 
 -- ===========================================
 -- Global Variables Declaration

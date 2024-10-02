@@ -1,6 +1,0 @@
-## Author: Blizzard Entertainment
-## Title: Blizzard ClassTrial Secure
-## LoadFirst: 1
-## UseSecureEnvironment: 1
-## RequiredDep: Blizzard_SharedXML
-Blizzard_ClassTrialSecure.xml

@@ -48,6 +48,7 @@ function TLDRGarrison.FilterLogic.CheckRewards(rewards, selectedRewardTypes)
     for _, reward in pairs(rewards) do
         for rewardType, isSelected in pairs(selectedRewardTypes) do
             if isSelected and rewardTypeMapping[rewardType] and rewardTypeMapping[rewardType](reward) then
+                FunctionDebugPrint("CheckRewards", "Mission ID: " .. reward.missionID .. " Reward Type: " .. rewardType) -- Debug print statement
                 return true  -- Found a valid reward
             end
         end
@@ -55,4 +56,6 @@ function TLDRGarrison.FilterLogic.CheckRewards(rewards, selectedRewardTypes)
     return false  -- No valid rewards found
 end
 
+
 -- Debug function to print Filtered Missions Counter info
+

@@ -6,33 +6,51 @@ TLDRGarrison.FollowerLogic = TLDRGarrison.FollowerLogic or {}
 local FollowerLogic = TLDRGarrison.FollowerLogic
 local FollowerTraits = TLDRGarrison.FollowerTraits
 
--- Function to retrieve mission threats (mechanics)
 local function GetMissionThreats(missionID)
-    local missions = C_Garrison.GetAvailableMissions(1)  -- Use follower type ID 1 for WoD
-    local missionInfo = nil
+    local missionInfo = C_Garrison.GetBasicMissionInfo(missionID)
+    if not missionInfo then
+        print("Mission not found for mission ID:", missionID)
+        return nil, nil
+    end
 
-    -- Find the mission with the specified missionID
-    for _, mission in ipairs(missions) do
-        if mission.missionID == missionID then
-            missionInfo = mission
-            break
+    -- Get mission deployment info to access enemies and their mechanics
+    local _, _, _, _, _, _, _, enemies = C_Garrison.GetMissionDeploymentInfo(missionID)
+    local mechanics = {}
+
+    if enemies then
+        for _, enemy in ipairs(enemies) do
+            if enemy.mechanics then
+                for _, mechanicInfo in pairs(enemy.mechanics) do
+                    local mechanicID = mechanicInfo.mechanicTypeID
+                    if mechanicID then
+                        mechanics[mechanicID] = mechanicInfo
+                    end
+                end
+            end
         end
     end
 
-    if missionInfo and missionInfo.mechanics then
-        return missionInfo.mechanics, missionInfo
+    if next(mechanics) ~= nil then
+        return mechanics, missionInfo
     else
         print("No threats found for mission ID:", missionID)
         return nil, missionInfo
     end
 end
 
+
 -- Function to find followers for a mission
 function FollowerLogic.FindFollowersForMission(missionID)
     print("Finding followers for mission ID:", missionID)
     local threats, missionInfo = GetMissionThreats(missionID)
-    if not threats then
+    if not missionInfo then
+        print("Mission not found for mission ID:", missionID)
+        return {}
+    end
+
+    if not threats or next(threats) == nil then
         print("No threats to counter for mission ID:", missionID)
+        -- Proceed to assign followers based on other criteria if desired
         return {}
     end
 
@@ -70,7 +88,6 @@ function FollowerLogic.FindFollowersForMission(missionID)
         if not found then
             print("No follower found to counter threat:", threatInfo.name, "(ID:", threatID, ")")
             -- Decide how to handle this case
-            -- For example, you might proceed without countering all threats or skip the mission
         end
     end
 
@@ -86,6 +103,3 @@ function FollowerLogic.FindFollowersForMission(missionID)
     -- Return the list of assigned followers
     return assignedFollowers
 end
-
--- Return the FollowerLogic table if needed
--- return FollowerLogic

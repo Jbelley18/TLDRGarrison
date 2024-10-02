@@ -66,7 +66,7 @@ local function ShowTLDRGarrisonFrame()
     if TLDRGarrison.GUI.mainFrame then
         TLDRGarrison.GUI.mainFrame:Show()
     else
-        print("TLDRGarrison frame not available")
+        FunctionDebugPrint("TLDRGarrison frame not available")
     end
 end
 
@@ -77,7 +77,7 @@ local function HideTLDRGarrisonFrame()
             TLDRGarrison.GUI.AdvancedFrame:Hide()
         end
     else
-        print("TLDRGarrison frame not available to hide")
+        FunctionDebugPrint("TLDRGarrison frame not available to hide")
     end
 end
 
@@ -122,10 +122,10 @@ local function OnStartCompleteButtonClick()
                 
             end
         else
-            print("No missions match the selected reward types.")
+            FunctionDebugPrint("No missions match the selected reward types.")
         end
     else
-        print("No missions fetched.")
+        FunctionDebugPrint("No missions fetched.")
     end
 end
 
@@ -135,27 +135,30 @@ local function SetButtonHandlers()
     if startCompleteButton then
         startCompleteButton:SetScript("OnClick", OnStartCompleteButtonClick)
     else
-        print("StartCompleteButton is not available.")
+        FunctionDebugPrint("StartCompleteButton is not available.")
     end
 end
 
 
 -- Handle the Debug Button Click
 local function OnDebugButtonClick()
-    local missionID = 311  -- Replace this with the mission ID you want to test
-    if _G.Debug and _G.Debug.PrintMissionInfo then
-        _G.Debug.PrintMissionInfo(missionID)  -- Call the function in Debug.lua
+    local missionID = 173  -- Replace this with the mission ID you want to test
+    if _G.FUNCTION_DEBUG["CheckRewards"] then  -- Example: Check if debugging for CheckRewards is enabled
+        -- Call any relevant debug function for the current mission logic
+        FunctionDebugPrint("CheckRewards", "Debugging rewards for mission ID: " .. missionID)
+        -- You can add additional debug actions here as needed
     else
-        print("Debug module or PrintMissionInfo function not found.")
+        FunctionDebugPrint("Debugging for CheckRewards not enabled or function not found.")
     end
 end
+
 
 -- Set the button click handler
 local debugButton = TLDRGarrison.GUI.debugButton  -- Ensure you're using the correct reference
 if debugButton then
     debugButton:SetScript("OnClick", OnDebugButtonClick)
 else
-    print("DebugButton is not available.")
+    FunctionDebugPrint("DebugButton is not available.")
 end
 
 -- Call this function to set button handlers during initialization
@@ -182,7 +185,7 @@ local function ToggleAdvancedFrame()
             end
         end)
     else
-        print("Advanced toggle button or advanced frame not found.")
+        FunctionDebugPrint("Advanced toggle button or advanced frame not found.")
     end
 end
 
@@ -195,7 +198,7 @@ SlashCmdList["TLDRGARRISON"] = function()
     if TLDRGarrison.GUI.Frame then
         TLDRGarrison.GUI.Frame:Show()
     else
-        print("TLDRGarrison frame not initialized")
+        FunctionDebugPrint("TLDRGarrison frame not initialized")
     end
 end
 
@@ -207,9 +210,9 @@ end
 local function LoadMissionLogic()
     local success, err = pcall(function() LoadAddOn("MissionLogic") end)
     if not success then
-        print("Failed to load mission logic: " .. err)
+        FunctionDebugPrint("Failed to load mission logic: " .. err)
     else
-        print("Mission logic successfully loaded")
+        FunctionDebugPrint("Mission logic successfully loaded")
     end
 end
 
@@ -217,10 +220,10 @@ local function InitializeGUIHandler()
     LoadMissionLogic()  -- Load mission logic first
 
     if not TLDRGarrison.GUI or not TLDRGarrison.GUI.mainFrame then
-        print("Failed to load GUI or mainFrame is missing")
+        FunctionDebugPrint("Failed to load GUI or mainFrame is missing")
         return
     else
-        print("GUI and mainFrame successfully loaded")
+        FunctionDebugPrint("GUI and mainFrame successfully loaded")
     end
 
     RegisterGarrisonEvents()  -- Set up Garrison events
