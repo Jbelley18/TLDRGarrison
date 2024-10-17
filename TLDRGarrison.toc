@@ -7,6 +7,7 @@
 
 ## Load the Init file first to handle initializations
 init.lua
+options.lua
 GUI.lua
 GUIHandler.lua
 FollowerTraits.lua

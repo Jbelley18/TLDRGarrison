@@ -52,14 +52,10 @@ end
 
 -- Make it globally accessible via G table
 G.GetSelectedCheckboxes = GetSelectedCheckboxes
-print("GetSelectedCheckboxes has been defined")
-
-
+print("GetSelectedCheckboxes has been defined and attached to G")
 
 -- Initialize the checkbox handlers (ensure G.checkboxes exists before calling this)
 AttachCheckboxHandlers()
-
-
 
 
 -- ========================

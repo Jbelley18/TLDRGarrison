@@ -187,6 +187,13 @@ function FL.FilterAndMatchMissions(missions, selectedRewardTypes)
     end
 end
 
+if not GH.GetSelectedCheckboxes then
+    print("GetSelectedCheckboxes is nil in FollowerTraits.lua")
+else
+    print("GetSelectedCheckboxes is available in FollowerTraits.lua")
+end
+
+
 -- Adjust the slash command to use the new logic
 SLASH_TLDRMATCH1 = "/tldrmatch"
 SlashCmdList["TLDRMATCH"] = function(msg)
