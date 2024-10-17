@@ -23,9 +23,11 @@ local rewardTypeMapping = {
     end,
 }
 
--- Function to filter missions based on selected reward types
-function FL.FilterMissionsByRewardType(missions, selectedRewardTypes)
+-- Function to filter missions based on selected reward types from options
+function FL.FilterMissionsByRewardType(missions)
+    local selectedRewardTypes = TLDRG_SavedSettings.filterMissions  -- Fetch selected reward types from Ace3 options
     local filteredMissions = {}
+    
     for _, mission in ipairs(missions) do
         local missionInfo = C_Garrison.GetBasicMissionInfo(mission.missionID)
         if missionInfo and missionInfo.rewards then
@@ -35,13 +37,14 @@ function FL.FilterMissionsByRewardType(missions, selectedRewardTypes)
             end
         end
     end
+
     return filteredMissions
 end
 
+-- Function to check if a mission's rewards match selected reward types
 function FL.CheckRewards(rewards, selectedRewardTypes)
     for _, reward in pairs(rewards) do
         for rewardType, isSelected in pairs(selectedRewardTypes) do
-            -- Adjust to ensure the reward type is mapped correctly.
             if isSelected and rewardTypeMapping[rewardType] and rewardTypeMapping[rewardType](reward) then
                 FunctionDebugPrint("CheckRewards", "Reward Type: " .. rewardType)
                 return true

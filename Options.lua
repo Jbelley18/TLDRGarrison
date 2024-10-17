@@ -1,38 +1,66 @@
--- Options.lua
--- Define the global table for your addon if it doesn't already exist
-_G.TLDRG = _G.TLDRG or {}
-TLDRG.Options = TLDRG.Options or {}
+-- Initialize Ace3
+local AceAddon = LibStub("AceAddon-3.0"):NewAddon("TLDRGarrison", "AceConsole-3.0", "AceEvent-3.0")
+local AceConfig = LibStub("AceConfig-3.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+local AceDB = LibStub("AceDB-3.0")
 
--- Create a table to store settings if it doesn't exist
+-- Initialize saved variables using AceDB
 TLDRG_SavedSettings = TLDRG_SavedSettings or {}
+AceAddon.db = AceDB:New("TLDRG_SavedSettings", {
+    profile = {
+        autoStartMissions = false,
+        filterMissions = {
+            garrisonResources = false,
+            followerXP = false,
+            rareItems = false,
+        },
+        debugMode = false,
+    }
+}, true)
 
--- Function to create the options panel
-local function CreateOptionsPanel()
-    local panel = CreateFrame("Frame", "TLDRGOptionsPanel", UIParent)
-    panel.name = "TLDRGarrison"
+-- Options table for the config panel
+local options = {
+    name = "TLDR Garrison Options",
+    handler = AceAddon,
+    type = 'group',
+    args = {
+        autoStartMissions = {
+            type = 'toggle',
+            name = "Enable Auto Start Missions",
+            desc = "Automatically start all missions that match filters.",
+            get = function(info) return AceAddon.db.profile.autoStartMissions end,
+            set = function(info, value) AceAddon.db.profile.autoStartMissions = value end,
+        },
+        filterMissions = {
+            type = 'multiselect',
+            name = "Filter Mission Types",
+            desc = "Select which mission types to prioritize.",
+            values = {
+                garrisonResources = "Garrison Resources",
+                followerXP = "Follower XP",
+                rareItems = "Rare Items",
+            },
+            get = function(info, key) return AceAddon.db.profile.filterMissions[key] end,
+            set = function(info, key, value) AceAddon.db.profile.filterMissions[key] = value end,
+        },
+        debugMode = {
+            type = 'toggle',
+            name = "Enable Debug Mode",
+            desc = "Toggle debug information for troubleshooting.",
+            get = function(info) return AceAddon.db.profile.debugMode end,
+            set = function(info, value) AceAddon.db.profile.debugMode = value end,
+        },
+        -- Add more settings as needed
+    },
+}
 
-    -- Title
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16)
-    title:SetText("TLDR Garrison Options")
+-- Register the options table with AceConfig
+AceConfig:RegisterOptionsTable("TLDRGarrison", options)
 
-    -- Checkbox for Auto Start
-    local autoStartCheckbox = CreateFrame("CheckButton", "TLDRGOptionAutoStartCheckbox", panel, "ChatConfigCheckButtonTemplate")
-    autoStartCheckbox:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -16)
-    autoStartCheckbox.Text:SetText("Enable Auto Start Missions")
-    autoStartCheckbox:SetChecked(TLDRG_SavedSettings.autoStartMissions or false)
+-- Add the options panel to the Blizzard AddOn interface using AceConfigDialog
+AceConfigDialog:AddToBlizOptions("TLDRGarrison", "TLDR Garrison")
 
-    -- Save the setting when checkbox is clicked
-    autoStartCheckbox:SetScript("OnClick", function(self)
-        TLDRG_SavedSettings.autoStartMissions = self:GetChecked()
-        print("Auto Start Missions set to", TLDRG_SavedSettings.autoStartMissions)
-    end)
-
-    -- Add more options as needed...
-
-    -- Register the panel in WoW's Interface Options
-    InterfaceOptions_AddCategory(panel)
-end
-
--- Call the function to create the panel
-CreateOptionsPanel()
+-- Set up slash command to open the options window
+AceAddon:RegisterChatCommand("tldrg", function()
+    AceConfigDialog:Open("TLDRGarrison")
+end)

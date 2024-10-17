@@ -3,16 +3,18 @@
 ## Version: 0.141
 ## Notes: TLDR Addon but for Garrison.
 ## Author: Justin Bell
+## OptionalDeps: Ace3
 ## SavedVariables: TLDRGarrison_SavedData
+## SavedVariables: TLDRG_SavedSettings
 
-## Load the Init file first to handle initializations
 init.lua
-options.lua
+Options.lua
 GUI.lua
-GUIHandler.lua
 FollowerTraits.lua
 MissionLogic.lua
 FilterLogic.lua
 FollowerLogic.lua
 Debug.lua
+GUIHandler.lua
+
 

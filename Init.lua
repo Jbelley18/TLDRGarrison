@@ -1,9 +1,11 @@
 -- Init.lua - This file is loaded first to handle all global initializations
-
+-- Initialize the global table if it doesn't exist yet
 -- Initialize the global table if it doesn't exist yet
 _G.TLDRG = _G.TLDRG or {}
 
--- Ensure that each module is properly initialized
+-- Ensure that SavedVariables are properly initialized
+TLDRG_SavedSettings = TLDRG_SavedSettings or {}
+
 -- Ensure that each module is properly initialized
 TLDRG.GUI = TLDRG.GUI or {}
 TLDRG.FilterLogic = TLDRG.FilterLogic or {}
@@ -11,6 +13,8 @@ TLDRG.MissionLogic = TLDRG.MissionLogic or {}
 TLDRG.FollowerLogic = TLDRG.FollowerLogic or {}
 TLDRG.FollowerTraits = TLDRG.FollowerTraits or {}
 TLDRG.GUIHandler = TLDRG.GUIHandler or {}
+TLDRG.Options = TLDRG.Options or {}  -- Add this line to initialize the Options module
+
 
 -- You can also initialize any global settings, default values, or debugging functions here
 _G.DEBUG_MODE = _G.DEBUG_MODE or false
@@ -90,3 +94,17 @@ end
 
 
 
+-- ===========================================
+-- Ace3 Framework Test
+-- ===========================================
+-- if LibStub then
+--     print("LibStub is available.")
+-- else
+--     print("LibStub is NOT available.")
+-- end
+
+-- if LibStub("AceAddon-3.0") then
+--     print("AceAddon-3.0 is loaded.")
+-- else
+--     print("AceAddon-3.0 is NOT loaded.")
+-- end

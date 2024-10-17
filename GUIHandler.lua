@@ -4,59 +4,12 @@ local GH = TLDRG.GUIHandler
 local G = TLDRG.GUI
 local ML = TLDRG.MissionLogic
 local FL = TLDRG.FilterLogic
-local FT = TLDRG.FollowerTraits -- Ensure that this is correctly referencing the FollowerTraits
+local FT = TLDRG.FollowerTraits
 
--- Verify that FT is initialized
+-- Verify that FollowerTraits is initialized
 if not FT or not FT.GetMissionMechanics then
     print("Error: FT (FollowerTraits) or FT.GetMissionMechanics is not properly initialized.")
 end
-
--- ========================
--- Checkbox Handling Section
--- ========================
-
--- Attach the OnClick handlers to the checkboxes after they are created
-local function AttachCheckboxHandlers()
-    -- Ensure G.checkboxes is initialized
-    if not G.checkboxes then
-        print("Error: G.checkboxes is not initialized.")
-        return
-    end
-
-    -- Attach OnClick handlers to checkboxes
-    for _, checkbox in ipairs(G.checkboxes) do
-        checkbox:SetScript("OnClick", function(self)
-            local isChecked = self:GetChecked()
-            print("Checkbox '" .. checkbox.Text:GetText() .. "' clicked. State: " .. tostring(isChecked))
-        end)
-    end
-end
-
--- Define the function normally
-local function GetSelectedCheckboxes()
-    local selected = {}
-    for _, checkbox in ipairs(G.checkboxes) do
-        if checkbox:GetChecked() then
-            selected[checkbox.Text:GetText()] = true
-        end
-    end
-
-    -- Debug output to verify selected checkboxes
-    print("Selected checkboxes after pressing start:")
-    for key, value in pairs(selected) do
-        print("  " .. key .. " -> " .. tostring(value))
-    end
-
-    return selected
-end
-
--- Make it globally accessible via G table
-G.GetSelectedCheckboxes = GetSelectedCheckboxes
-print("GetSelectedCheckboxes has been defined and attached to G")
-
--- Initialize the checkbox handlers (ensure G.checkboxes exists before calling this)
-AttachCheckboxHandlers()
-
 
 -- ========================
 -- Garrison Events Section
@@ -107,12 +60,12 @@ local function OnStartCompleteButtonClick()
     local missions = ML.FetchAndPrintMissions()
 
     if missions then
-        -- Get selected checkboxes (reward types)
-        local selectedCheckboxes = GetSelectedCheckboxes()
-        print("StartCompleteButton pressed. Selected checkboxes:")
+        -- Use the selected reward types from the Ace3 options
+        local selectedRewardTypes = TLDRG_SavedSettings.filterMissions
+        print("StartCompleteButton pressed. Selected reward types:")
 
         -- Filter the missions based on the selected reward types
-        local filteredMissions = FL.FilterMissionsByRewardType(missions, selectedCheckboxes)
+        local filteredMissions = FL.FilterMissionsByRewardType(missions, selectedRewardTypes)
 
         -- Loop through filtered missions and fetch mechanics using FT
         for _, mission in ipairs(filteredMissions) do
@@ -132,17 +85,11 @@ local function OnStartCompleteButtonClick()
     end
 end
 
-
-
-
 local function SetButtonHandlers()
     -- Ensure the main frame is created by the GUI module (TLDRG.GUI)
     if not G.mainFrame then
-        G.CreateMainFrame()  -- Make sure to call the function from TLDRG.GUI
+        G.CreateMainFrame()
     end
-
-    -- Attach checkbox handlers only after the main frame and checkboxes are created
-    AttachCheckboxHandlers()
 
     local startCompleteButton = G.StartCompleteButton  -- Reference the StartCompleteButton from G (GUI)
     print("StartCompleteButton in SetButtonHandlers:", startCompleteButton ~= nil)
@@ -152,8 +99,6 @@ local function SetButtonHandlers()
         print("StartCompleteButton is not available.")
     end
 end
-
-
 
 -- Call this function to set button handlers during initialization
 SetButtonHandlers()

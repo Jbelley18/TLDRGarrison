@@ -22,22 +22,6 @@ local function CreateDraggableFrame(name, parent, width, height, point, backdrop
     return frame
 end
 
--- Helper function to create checkboxes
-local function CreateCheckbox(parent, label, x, y)
-    local checkbox = CreateFrame("CheckButton", nil, parent, "ChatConfigCheckButtonTemplate")
-    checkbox:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    checkbox.Text:SetText(label)
-    checkbox:SetChecked(false)
-    
-    -- Add a debug print when the checkbox is clicked
-    checkbox:SetScript("OnClick", function(self)
-        local isChecked = self:GetChecked()
-        print("Checkbox '" .. label .. "' clicked. State: " .. tostring(isChecked))
-    end)
-
-    return checkbox
-end
-
 -- Function to create the main frame
 function G.CreateMainFrame()
     if G.mainFrame then
@@ -45,23 +29,8 @@ function G.CreateMainFrame()
     end
 
     -- Create the main frame
-    local mainFrame = CreateDraggableFrame("TLDRGarrisonFrame", UIParent, 300, 550, {"CENTER", UIParent, "CENTER"})
+    local mainFrame = CreateDraggableFrame("TLDRGarrisonFrame", UIParent, 300, 250, {"CENTER", UIParent, "CENTER"})
     G.mainFrame = mainFrame
-
-    -- Main frame checkboxes
-    local checkboxDetails = {
-        {text = "Garrison Resources", y = -40},
-        {text = "Armor/Weapon Upgrades", y = -70},
-        {text = "Scribe Rush Order", y = -100},
-        {text = "Follower XP", y = -130},
-        {text = "Rare Items (Mounts, Pets, etc.)", y = -160}
-    }
-
-    -- Initialize the checkboxes
-    G.checkboxes = {}
-    for i, cb in ipairs(checkboxDetails) do
-        G.checkboxes[i] = CreateCheckbox(mainFrame, cb.text, 10, cb.y)
-    end
 
     -- Create the Start/Complete button
     G.StartCompleteButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
@@ -70,7 +39,7 @@ function G.CreateMainFrame()
     G.StartCompleteButton:SetText("Start/Complete All")
     print("StartCompleteButton created:", G.StartCompleteButton ~= nil)
 
-    -- Create the Debug Button
+    -- Create the Debug Button (optional)
     local debugButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
     debugButton:SetSize(100, 30)
     debugButton:SetPoint("BOTTOMRIGHT", G.StartCompleteButton, "TOPRIGHT", 0, 20)
