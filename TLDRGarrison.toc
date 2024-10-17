@@ -1,16 +1,17 @@
 ## Interface: 110002
-## Title: TLDRGarrison
+## Title: TLDRG
 ## Version: 0.141
-## Notes: GuiTest for Garrison
-## Author: Justin Belley
+## Notes: TLDR Addon but for Garrison.
+## Author: Justin Bell
+## SavedVariables: TLDRGarrison_SavedData
 
-## Load the GUI module first
+## Load the Init file first to handle initializations
+init.lua
 GUI.lua
-TLDRGarrison.lua
+GUIHandler.lua
 FollowerTraits.lua
 MissionLogic.lua
 FilterLogic.lua
 FollowerLogic.lua
 Debug.lua
-GUIHandler.lua
 

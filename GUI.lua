@@ -1,5 +1,4 @@
-_G.TLDRGarrison = _G.TLDRGarrison or {}
-TLDRGarrison.GUI = {}
+local G = TLDRG.GUI  -- Reference the global TLDRG.GUI table
 
 -- Helper function to create draggable frames
 local function CreateDraggableFrame(name, parent, width, height, point, backdropSettings)
@@ -18,7 +17,6 @@ local function CreateDraggableFrame(name, parent, width, height, point, backdrop
         edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
         tile = true, tileSize = 32, edgeSize = 32,
         insets = { left = 11, right = 12, top = 12, bottom = 11 },
-
     })
     frame:Hide()  -- Hide the frame initially
     return frame
@@ -30,33 +28,25 @@ local function CreateCheckbox(parent, label, x, y)
     checkbox:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
     checkbox.Text:SetText(label)
     checkbox:SetChecked(false)
+    
+    -- Add a debug print when the checkbox is clicked
+    checkbox:SetScript("OnClick", function(self)
+        local isChecked = self:GetChecked()
+        print("Checkbox '" .. label .. "' clicked. State: " .. tostring(isChecked))
+    end)
+
     return checkbox
 end
 
--- Function to create the main frame, but it won't be created until this function is called
-function TLDRGarrison.GUI.CreateMainFrame()
-    if TLDRGarrison.GUI.mainFrame then
-        return TLDRGarrison.GUI.mainFrame
+-- Function to create the main frame
+function G.CreateMainFrame()
+    if G.mainFrame then
+        return G.mainFrame
     end
 
     -- Create the main frame
     local mainFrame = CreateDraggableFrame("TLDRGarrisonFrame", UIParent, 300, 550, {"CENTER", UIParent, "CENTER"})
-    TLDRGarrison.GUI.mainFrame = mainFrame
-
-    -- Create the advanced frame dynamically
-    local advancedFrame = CreateDraggableFrame("TLDRGarrisonAdvancedFrame", UIParent, 300, 500, {"TOPLEFT", mainFrame, "TOPRIGHT", 10, 0})
-    TLDRGarrison.GUI.AdvancedFrame = advancedFrame
-
-    -- Create the Advanced Toggle Button
-    local advancedToggleButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
-    advancedToggleButton:SetSize(100, 30)
-    advancedToggleButton:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -10, 10)
-    advancedToggleButton:SetText("Advanced")
-    TLDRGarrison.GUI.advancedToggleButton = advancedToggleButton
-
-    -- Close button for the main frame
-    local closeButton = CreateFrame("Button", nil, mainFrame, "UIPanelCloseButton")
-    closeButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT")
+    G.mainFrame = mainFrame
 
     -- Main frame checkboxes
     local checkboxDetails = {
@@ -66,29 +56,31 @@ function TLDRGarrison.GUI.CreateMainFrame()
         {text = "Follower XP", y = -130},
         {text = "Rare Items (Mounts, Pets, etc.)", y = -160}
     }
-    TLDRGarrison.GUI.checkboxes = {}
+
+    -- Initialize the checkboxes
+    G.checkboxes = {}
     for i, cb in ipairs(checkboxDetails) do
-        TLDRGarrison.GUI.checkboxes[i] = CreateCheckbox(mainFrame, cb.text, 10, cb.y)
+        G.checkboxes[i] = CreateCheckbox(mainFrame, cb.text, 10, cb.y)
     end
 
-    -- Start/Complete button
-    local startCompleteButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
-    startCompleteButton:SetSize(120, 30)
-    startCompleteButton:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", 10, 10)
-    startCompleteButton:SetText("Start/Complete All")
-    TLDRGarrison.GUI.StartCompleteButton = startCompleteButton -- Fix the reference here
+    -- Create the Start/Complete button
+    G.StartCompleteButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
+    G.StartCompleteButton:SetSize(120, 30)
+    G.StartCompleteButton:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", 10, 10)
+    G.StartCompleteButton:SetText("Start/Complete All")
+    print("StartCompleteButton created:", G.StartCompleteButton ~= nil)
 
     -- Create the Debug Button
     local debugButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
     debugButton:SetSize(100, 30)
-    debugButton:SetPoint("BOTTOMRIGHT", advancedToggleButton, "TOPRIGHT", 0, 20)  -- Adjust position if needed
+    debugButton:SetPoint("BOTTOMRIGHT", G.StartCompleteButton, "TOPRIGHT", 0, 20)
     debugButton:SetText("Debug")
-    TLDRGarrison.GUI.debugButton = debugButton
+    G.debugButton = debugButton
 
-    -- Show the main frame (optional, depends on your logic)
-    mainFrame:Show()
+    -- Close button for the main frame
+    local closeButton = CreateFrame("Button", nil, mainFrame, "UIPanelCloseButton")
+    closeButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT")
 
-    -- Print a message to confirm
     print("Main frame and debug button created successfully")
 
     return mainFrame

@@ -1,185 +1,216 @@
--- FollowerTraits.lua
-TLDRGarrison = TLDRGarrison or {}
-TLDRGarrison.FollowerTraits = TLDRGarrison.FollowerTraits or {}
+-- Reference the global TLDRG tables
+local _, FT = ...
+TLDRG.FollowerTraits = FT
+local FT = TLDRG.FollowerTraits or {}
+-- Reference other tables from TLDRG
+local FL = TLDRG.FilterLogic or {}
+local ML = TLDRG.MissionLogic or {}
+local GH = TLDRG.GUIHandler or {}
 
-local FollowerTraits = TLDRGarrison.FollowerTraits
 
--- Mapping of mission mechanics (threats) to the ability IDs that counter them
-FollowerTraits.Counters = {
-    -- Standard Threat Counters
-    [36] = {108},     -- Timed Battle (Burst of Power)
-    [37] = {116},     -- Powerful Spell (Magic Debuff)
-    [38] = {114},     -- Deadly Minions (Blind)
-    [39] = {102},     -- Massive Strike (Taunt)
-    [40] = {120},     -- Danger Zones (Environmental Suit)
-    [41] = {100},     -- Wild Aggression (Shield Wall)
-    [42] = {112},     -- Group Damage (Group Heal)
-    [44] = {122},     -- Magic Debuff (Dispel Magic)
-    [45] = {104},     -- Powerful Enemy (Execute)
-    [46] = {110},     -- Minion Swarms (Multi-Shot)
-    -- Add more mappings as needed
+-- Mapping of mechanics to counter abilities, traits, and specializations
+FT.MechanicCounterMapping = {
+    [2] = { -- Massive Strike
+        counterAbilityNames = {"Divine Shield", "Evasion", "Ice Block"},
+        counterAbilityIDs = {123, 456, 789},  -- Replace with actual ability IDs.
+        traitsRequired = {"Resilient", "Iron Will"},
+        specModifiers = {
+            ["Protection Paladin"] = 10,
+            ["Fury Warrior"] = 5
+        }
+    },
+    [7] = { -- Minion Swarms
+        counterAbilityNames = {"Cleave", "Divine Storm", "Fan of Knives"},
+        counterAbilityIDs = {321, 654, 987},
+        traitsRequired = {"Leader of Men", "Savage"},
+        specModifiers = {
+            ["Arms Warrior"] = 10,
+            ["Retribution Paladin"] = 5
+        }
+    }
 }
 
--- Equivalence mapping for traits
-FollowerTraits.EquivTrait = {
-    [244] = 4,     -- Trait 244 is equivalent to 4
-    [250] = 221,   -- Trait 250 is equivalent to 221
-    [228] = 48,    -- Trait 228 is equivalent to 48
-    [227] = 48,    -- Trait 227 is equivalent to 48
-    [303] = 202,   -- Trait 303 is equivalent to 202
-    [286] = 283,   -- Trait 286 is equivalent to 283
-    [293] = 292,   -- Trait 293 is equivalent to 292
+-- Environment bonuses mapping
+FT.EnvironmentBonuses = {
+    ["Mountainous"] = {
+        bonus = 5,
+        traits = {"Mountaineer", "Survivalist"},
+    },
+    ["Swamp"] = {
+        bonus = 5,
+        traits = {"Marshwalker"},
+    },
+    ["Forest"] = {
+        bonus = 3,
+        traits = {"Nature's Ally", "Tracker"},
+    }
 }
 
--- Specialization counters
-FollowerTraits.SpecCounters = {
-    [2] = {1, 2, 7, 8, 10},
-    [3] = {1, 4, 7, 8, 10},
-    [4] = {1, 2, 7, 8, 10},
-    -- Add more mappings as needed
-}
-
--- Function to get the traits of a follower
-function FollowerTraits.GetFollowerTraits(garrFollowerID)
-    local abilities = C_Garrison.GetFollowerAbilities(garrFollowerID)
-    if not abilities then
-        print("No abilities found for follower ID:", garrFollowerID)
-        return {}
+--- Function to get the mechanics of a mission by missionID
+function FT.GetMissionMechanics(missionID)
+    local missionDeployment = C_Garrison.GetMissionDeploymentInfo(missionID)
+    if missionDeployment and missionDeployment.enemies then
+        local mechanics = {}
+        for _, enemy in ipairs(missionDeployment.enemies) do
+            if enemy.mechanics then
+                for _, mechanic in pairs(enemy.mechanics) do
+                    table.insert(mechanics, {
+                        mechanicTypeID = mechanic.mechanicTypeID,
+                        name = mechanic.name,
+                        description = mechanic.description,
+                        icon = mechanic.icon
+                    })
+                end
+            end
+        end
+        if #mechanics > 0 then
+            print("Mission Mechanics:")
+            for _, mechanic in ipairs(mechanics) do
+                print("Mechanic Type ID:", mechanic.mechanicTypeID, "Name:", mechanic.name, "Description:", mechanic.description)
+            end
+        else
+            print("No mechanics found.")
+        end
+        return mechanics
     end
-    local traits = {}
-    for _, ability in pairs(abilities) do
-        table.insert(traits, ability.id)
-    end
-    return traits
+    print("No mechanics found.")
+    return nil
 end
 
--- Function to check if a follower can counter a specific mission threat
-function FollowerTraits.CanFollowerCounter(garrFollowerID, mechanicID)
-    local abilities = C_Garrison.GetFollowerAbilities(garrFollowerID)
-    local followerInfo = C_Garrison.GetFollowerInfo(garrFollowerID)
-    local specID = followerInfo and followerInfo.classSpec
-    if not abilities or not specID then return false end
+--- Function to find potential followers that can counter a mission's mechanics
+function FT.GetPotentialFollowerMatches(missionID)
+    local potentialMatches = {}
+    local missionMechanics = FT.GetMissionMechanics(missionID)
+    local missionEnvironment = C_Garrison.GetMissionDeploymentInfo(missionID).locTextureKit
 
-    local counterAbilities = FollowerTraits.Counters[mechanicID] or {}
-    local specCounters = FollowerTraits.SpecCounters[specID] or {}
+    -- Validate the mission mechanics
+    if not missionMechanics or #missionMechanics == 0 then
+        print("No mechanics found for mission ID:", missionID)
+        return potentialMatches
+    end
 
-    -- Check abilities and traits
-    for _, ability in pairs(abilities) do
-        for _, counterAbilityID in ipairs(counterAbilities) do
-            if ability.id == counterAbilityID or FollowerTraits.EquivTrait[ability.id] == counterAbilityID then
-                return true
+    -- Retrieve all collected followers
+    local followers = C_Garrison.GetFollowers(1)
+
+    for _, follower in ipairs(followers) do
+        if follower.isCollected then
+            local abilities = C_Garrison.GetFollowerAbilities(follower.followerID)
+            local traits = FT.GetFollowerTraits(follower.followerID)
+
+            for _, mechanic in ipairs(missionMechanics) do
+                local counterInfo = FT.MechanicCounterMapping[mechanic.mechanicTypeID]
+
+                if counterInfo then
+                    for _, ability in ipairs(abilities) do
+                        if tContains(counterInfo.counterAbilityNames, ability.name) then
+                            -- Check for trait bonuses
+                            local hasTraitBonus = false
+                            for _, requiredTrait in ipairs(counterInfo.traitsRequired or {}) do
+                                if tContains(traits, requiredTrait) then
+                                    hasTraitBonus = true
+                                    break
+                                end
+                            end
+
+                            -- Check for environment bonuses
+                            local envBonus = 0
+                            local envInfo = FT.EnvironmentBonuses[missionEnvironment]
+                            if envInfo and tContains(traits, envInfo.traits) then
+                                envBonus = envInfo.bonus
+                            end
+
+                            -- Add the follower as a potential match
+                            table.insert(potentialMatches, {
+                                followerName = follower.name,
+                                abilityName = ability.name,
+                                mechanicName = mechanic.name,
+                                hasTraitBonus = hasTraitBonus,
+                                environmentBonus = envBonus
+                            })
+                            print("Match found for mechanic:", mechanic.name)
+                            print("  Follower:", follower.name, "| Ability:", ability.name)
+                        else
+                            print("No match for this counter.")
+                        end
+                    end
+                end
             end
         end
     end
 
-    -- Check specialization counters
-    for _, specCounterID in ipairs(specCounters) do
-        if specCounterID == mechanicID then
-            return true
+    -- Display the results
+    if #potentialMatches == 0 then
+        print("No followers found that can counter mechanics for mission ID:", missionID)
+    else
+        print("Potential matches for mission ID:", missionID)
+        for _, match in ipairs(potentialMatches) do
+            print("Follower:", match.followerName, "| Ability:", match.abilityName, "| Counters:", match.mechanicName)
+            print("  Trait Bonus:", match.hasTraitBonus and "Yes" or "No", "| Environment Bonus:", match.environmentBonus)
         end
     end
 
-    return false
+    return potentialMatches
 end
 
--- Additional tables and functions as needed...
+-- Function to filter missions, get their mechanics, and find potential followers
+function FL.FilterAndMatchMissions(missions, selectedRewardTypes)
+    -- Step 1: Filter the missions based on selected reward types
+    local filteredMissions = FL.FilterMissionsByRewardType(missions, selectedRewardTypes)
 
+    -- Step 2: Iterate over the filtered missions
+    for _, mission in ipairs(filteredMissions) do
+        print("Filtered Mission ID:", mission.missionID)
 
-FollowerTraits.SpecCounters = {
-    [2] = {1, 2, 7, 8, 10},
-    [3] = {1, 4, 7, 8, 10},
-    [4] = {1, 2, 7, 8, 10},
-    [5] = {6, 7, 9, 10},
-    [7] = {1, 2, 6, 10},
-    [8] = {1, 2, 6, 9},
-    [9] = {3, 4, 7, 9},
-    [10] = {1, 6, 7, 9, 10},
-    [12] = {6, 7, 8, 9, 10},
-    [13] = {2, 6, 7, 9, 10},
-    [14] = {6, 8, 9, 10},
-    [15] = {6, 7, 8, 9, 10},
-    [16] = {2, 7, 8, 9, 10},
-    [17] = {1, 2, 3, 6, 9},
-    [18] = {3, 4, 6, 8},
-    [19] = {1, 6, 8, 9, 10},
-    [20] = {3, 4, 8, 9},
-    [21] = {1, 2, 4, 8, 9},
-    [22] = {2, 7, 8, 9, 10},
-    [23] = {3, 4, 6, 9},
-    [24] = {3, 4, 6, 7},
-    [25] = {4, 6, 7, 9, 10},
-    [26] = {2, 6, 8, 9, 10},
-    [27] = {6, 7, 8, 9, 10},
-    [28] = {2, 6, 7, 8, 9},
-    [29] = {3, 7, 8, 9, 10},
-    [30] = {3, 6, 7, 9, 10},
-    [31] = {3, 4, 7, 8},
-    [32] = {4, 7, 8, 9, 10},
-    [33] = {2, 7, 8, 10, 10},
-    [34] = {3, 8, 9, 10, 10},
-    [35] = {1, 6, 7, 8, 10},
-    [37] = {2, 6, 7, 8, 10},
-    [38] = {1, 2, 6, 7, 8}
-}
+        -- Step 3: Get the mechanics of the mission
+        local mechanics = FT.GetMissionMechanics(mission.missionID)
+        
+        if mechanics and #mechanics > 0 then
+            print("Mission Mechanics:")
+            for _, mechanic in ipairs(mechanics) do
+                print("Mechanic Name:", mechanic.name, "Description:", mechanic.description)
+            end
 
+            -- Step 4: Get potential followers that can counter the mission mechanics
+            local potentialMatches = FT.GetPotentialFollowerMatches(mission.missionID)
+            
+            if #potentialMatches > 0 then
+                print("Potential matches for mission ID:", mission.missionID)
+                for _, match in ipairs(potentialMatches) do
+                    print("Follower:", match.followerName, "| Ability:", match.abilityName, "| Counters:", match.mechanicName)
+                end
+            else
+                print("No followers found that can counter mechanics for mission ID:", mission.missionID)
+            end
+        else
+            print("No mechanics found for Mission ID:", mission.missionID)
+        end
+    end
+end
 
--- Equivalence mapping for traits (from T.EquivTrait)
-FollowerTraits.EquivTrait = {
-    [244] = 4,     -- Trait 244 is equivalent to 4
-    [250] = 221,   -- Trait 250 is equivalent to 221
-    [228] = 48,    -- Trait 228 is equivalent to 48
-    [227] = 48,    -- Trait 227 is equivalent to 48
-    [303] = 202,   -- Trait 303 is equivalent to 202
-    [286] = 283,   -- Trait 286 is equivalent to 283
-    [293] = 292,   -- Trait 293 is equivalent to 292
-}
+-- Adjust the slash command to use the new logic
+SLASH_TLDRMATCH1 = "/tldrmatch"
+SlashCmdList["TLDRMATCH"] = function(msg)
+    local missionID = tonumber(msg)
+    if not missionID then
+        print("Please provide a valid mission ID. Usage: /tldrmatch <missionID>")
+        return
+    end
 
--- Trait cost mapping (from T.TraitCost)
-FollowerTraits.TraitCost = {
-    [47] = 4,    -- High cost trait
-    [248] = 3,
-    [256] = 3,
-    [79] = 2,
-    [80] = 1,
-    [236] = 1,
-    [287] = -5,  -- Negative cost indicates undesirable traits
-    [290] = -5,
-    [305] = -3,
-    [315] = 1,
-    [327] = 1,
-    [275] = -1,
-    [283] = 2,
-    [286] = 2,
-}
+    -- Get the selected reward types from the checkboxes
+    local selectedRewardTypes = GH.GetSelectedCheckboxes()
 
--- Lock traits mapping (from T.LockTraits)
-FollowerTraits.LockTraits = {
-    [47] = true,
-    [231] = true,
-    [227] = true,
-    [228] = true,
-    [244] = true,
-    [248] = true,
-    [324] = true,
-    [325] = true,
-    [326] = true,
-    [201] = true,
-    [303] = true,
-}
+    -- Fetch available missions using the existing mission fetching logic
+    local missions = ML.FetchAndPrintMissions()
 
--- Always active traits (from T.AlwaysTraits)
-FollowerTraits.AlwaysTraits = {
-    [221] = true,
-    [201] = true,
-    [202] = true,
-    [47]  = true,
-}
-
--- Additional tables from the addon code can be included as needed.
--- For example, if you need to handle environment bonuses or mission interests,
--- you can integrate them here following the same pattern.
-
--- If you need to map equipment counters or ship-related mechanics, you can add those as well.
--- However, since your addon focuses on garrison missions and followers, we can omit ship-related data.
-
--- You can also include the SpecCounters if needed, but it requires careful mapping to ensure correctness.
+    -- Validate the missions and selected reward types
+    if missions and #missions > 0 then
+        if next(selectedRewardTypes) then
+            -- Run the integrated flow to filter missions and find matches
+            FL.FilterAndMatchMissions(missions, selectedRewardTypes)
+        else
+            print("No reward types selected. Please select at least one reward type.")
+        end
+    else
+        print("No available missions found.")
+    end
+end

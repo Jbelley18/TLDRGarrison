@@ -1,89 +1,93 @@
--- GUIHandler.lua
+-- Reference the global TLDRG tables
+local _, GH = ...
+local GH = TLDRG.GUIHandler
+local G = TLDRG.GUI
+local ML = TLDRG.MissionLogic
+local FL = TLDRG.FilterLogic
+local FT = TLDRG.FollowerTraits -- Ensure that this is correctly referencing the FollowerTraits
+
+-- Verify that FT is initialized
+if not FT or not FT.GetMissionMechanics then
+    print("Error: FT (FollowerTraits) or FT.GetMissionMechanics is not properly initialized.")
+end
 
 -- ========================
 -- Checkbox Handling Section
 -- ========================
 
+-- Attach the OnClick handlers to the checkboxes after they are created
+local function AttachCheckboxHandlers()
+    -- Ensure G.checkboxes is initialized
+    if not G.checkboxes then
+        print("Error: G.checkboxes is not initialized.")
+        return
+    end
+
+    -- Attach OnClick handlers to checkboxes
+    for _, checkbox in ipairs(G.checkboxes) do
+        checkbox:SetScript("OnClick", function(self)
+            local isChecked = self:GetChecked()
+            print("Checkbox '" .. checkbox.Text:GetText() .. "' clicked. State: " .. tostring(isChecked))
+        end)
+    end
+end
+
+-- Define the function normally
 local function GetSelectedCheckboxes()
     local selected = {}
-    for _, checkbox in ipairs(TLDRGarrison.GUI.checkboxes) do
+    for _, checkbox in ipairs(G.checkboxes) do
         if checkbox:GetChecked() then
-            selected[checkbox.Text:GetText()] = true  -- Add checked checkbox label to selected table
+            selected[checkbox.Text:GetText()] = true
         end
     end
 
-    -- Debug: Print selected checkboxes
-    if next(selected) then
-        print("Selected Checkboxes:")
-        for text in pairs(selected) do
-            print("  " .. text)
-        end
-    else
-        print("No checkboxes selected.")
+    -- Debug output to verify selected checkboxes
+    print("Selected checkboxes after pressing start:")
+    for key, value in pairs(selected) do
+        print("  " .. key .. " -> " .. tostring(value))
     end
 
     return selected
 end
 
+-- Make it globally accessible via G table
+G.GetSelectedCheckboxes = GetSelectedCheckboxes
+print("GetSelectedCheckboxes has been defined")
 
-local function LoadCheckboxStates()
-    if TLDRGarrisonGlobalSavedVars and TLDRGarrisonGlobalSavedVars.CheckboxStates then
-        for _, checkbox in ipairs(TLDRGarrison.GUI.Checkboxes) do
-            local text = checkbox.Text:GetText()
-            if TLDRGarrisonGlobalSavedVars.CheckboxStates[text] ~= nil then
-                checkbox:SetChecked(TLDRGarrisonGlobalSavedVars.CheckboxStates[text])
-            end
-        end
-    end
-end
 
-local function SaveCheckboxStates()
-    TLDRGarrisonGlobalSavedVars = TLDRGarrisonGlobalSavedVars or {}
-    TLDRGarrisonGlobalSavedVars.CheckboxStates = {}
 
-    for _, checkbox in ipairs(TLDRGarrison.GUI.Checkboxes) do
-        TLDRGarrisonGlobalSavedVars.CheckboxStates[checkbox.Text:GetText()] = checkbox:GetChecked()
-    end
-    print("Checkbox states saved.")
-end
+-- Initialize the checkbox handlers (ensure G.checkboxes exists before calling this)
+AttachCheckboxHandlers()
 
--- Initialize and load checkbox states
-local function InitializeGUI()
-    LoadCheckboxStates()
-end
+
+
 
 -- ========================
 -- Garrison Events Section
 -- ========================
 
--- Show the Garrison frame when interacting with the Garrison NPC
 local function ShowTLDRGarrisonFrame()
-    -- Create the main frame if it's not created yet
-    if not TLDRGarrison.GUI.mainFrame then
-        TLDRGarrison.GUI.CreateMainFrame()
+    if not G.mainFrame then
+        G.CreateMainFrame()
     end
 
-    if TLDRGarrison.GUI.mainFrame then
-        TLDRGarrison.GUI.mainFrame:Show()
+    if G.mainFrame then
+        G.mainFrame:Show()
     else
-        FunctionDebugPrint("TLDRGarrison frame not available")
+        print("TLDRGarrison frame not available")
     end
 end
 
 local function HideTLDRGarrisonFrame()
-    if TLDRGarrison.GUI.mainFrame then
-        TLDRGarrison.GUI.mainFrame:Hide()
-        if TLDRGarrison.GUI.AdvancedFrame and TLDRGarrison.GUI.AdvancedFrame:IsShown() then
-            TLDRGarrison.GUI.AdvancedFrame:Hide()
+    if G.mainFrame then
+        G.mainFrame:Hide()
+        if G.AdvancedFrame and G.AdvancedFrame:IsShown() then
+            G.AdvancedFrame:Hide()
         end
     else
-        FunctionDebugPrint("TLDRGarrison frame not available to hide")
+        print("TLDRGarrison frame not available to hide")
     end
 end
-
--- Event handler setup remains the same...
-
-
 
 local function RegisterGarrisonEvents()
     local eventFrame = CreateFrame("Frame")
@@ -101,135 +105,60 @@ end
 -- ========================
 -- Button Handling Section
 -- ========================
--- Function to handle the "Start/Complete All" button click in GUIHandler.lua
+
 local function OnStartCompleteButtonClick()
-    local missions = TLDRGarrison.MissionLogic.FetchAndPrintMissions()
+    -- Fetch all available missions
+    local missions = ML.FetchAndPrintMissions()
 
     if missions then
-        -- Get selected checkboxes (filters)
+        -- Get selected checkboxes (reward types)
         local selectedCheckboxes = GetSelectedCheckboxes()
+        print("StartCompleteButton pressed. Selected checkboxes:")
 
-        -- Use FilterLogic to filter missions based on the selected reward types
-        local filteredMissions = TLDRGarrison.FilterLogic.FilterMissionsByRewardType(missions, selectedCheckboxes)
+        -- Filter the missions based on the selected reward types
+        local filteredMissions = FL.FilterMissionsByRewardType(missions, selectedCheckboxes)
 
-        -- Debug output for filtered missions
-        if filteredMissions and #filteredMissions > 0 then
-            print("Filtered Missions:")
-            for _, mission in ipairs(filteredMissions) do
-                print("Filtered Mission ID:", mission.missionID)
-
-                -- Call follower selection for each filtered mission
-                
+        -- Loop through filtered missions and fetch mechanics using FT
+        for _, mission in ipairs(filteredMissions) do
+            print("Filtered Mission ID:", mission.missionID)
+            local mechanics = FT.GetMissionMechanics(mission.missionID)
+            if mechanics and #mechanics > 0 then
+                print("Mission Mechanics:")
+                for _, mechanic in ipairs(mechanics) do
+                    print("Mechanic Name:", mechanic.name, "Description:", mechanic.description)
+                end
+            else
+                print("No mechanics found for Mission ID:", mission.missionID)
             end
-        else
-            FunctionDebugPrint("No missions match the selected reward types.")
         end
     else
-        FunctionDebugPrint("No missions fetched.")
+        print("No missions fetched.")
     end
 end
 
--- Set the Start/Complete button click event
+
+
+
 local function SetButtonHandlers()
-    local startCompleteButton = TLDRGarrison.GUI.StartCompleteButton -- Correct reference
+    -- Ensure the main frame is created by the GUI module (TLDRG.GUI)
+    if not G.mainFrame then
+        G.CreateMainFrame()  -- Make sure to call the function from TLDRG.GUI
+    end
+
+    -- Attach checkbox handlers only after the main frame and checkboxes are created
+    AttachCheckboxHandlers()
+
+    local startCompleteButton = G.StartCompleteButton  -- Reference the StartCompleteButton from G (GUI)
+    print("StartCompleteButton in SetButtonHandlers:", startCompleteButton ~= nil)
     if startCompleteButton then
         startCompleteButton:SetScript("OnClick", OnStartCompleteButtonClick)
     else
-        FunctionDebugPrint("StartCompleteButton is not available.")
+        print("StartCompleteButton is not available.")
     end
 end
 
 
--- Handle the Debug Button Click
-local function OnDebugButtonClick()
-    local missionID = 173  -- Replace this with the mission ID you want to test
-    if _G.FUNCTION_DEBUG["CheckRewards"] then  -- Example: Check if debugging for CheckRewards is enabled
-        -- Call any relevant debug function for the current mission logic
-        FunctionDebugPrint("CheckRewards", "Debugging rewards for mission ID: " .. missionID)
-        -- You can add additional debug actions here as needed
-    else
-        FunctionDebugPrint("Debugging for CheckRewards not enabled or function not found.")
-    end
-end
-
-
--- Set the button click handler
-local debugButton = TLDRGarrison.GUI.debugButton  -- Ensure you're using the correct reference
-if debugButton then
-    debugButton:SetScript("OnClick", OnDebugButtonClick)
-else
-    FunctionDebugPrint("DebugButton is not available.")
-end
 
 -- Call this function to set button handlers during initialization
 SetButtonHandlers()
-
-
-
--- ========================
--- Advanced Frame Handling Section
--- ========================
-
-local function ToggleAdvancedFrame()
-    local advancedToggleButton = TLDRGarrison.GUI.advancedToggleButton
-    local advancedFrame = TLDRGarrison.GUI.AdvancedFrame
-
-    if advancedToggleButton and advancedFrame then
-        advancedToggleButton:SetScript("OnClick", function()
-            if advancedFrame:IsShown() then
-                advancedFrame:Hide()
-                advancedToggleButton:SetText("Advanced")
-            else
-                advancedFrame:Show()
-                advancedToggleButton:SetText("Hide Advanced")
-            end
-        end)
-    else
-        FunctionDebugPrint("Advanced toggle button or advanced frame not found.")
-    end
-end
-
--- ========================
--- Slash Command Section
--- ========================
-
-SLASH_TLDRGARRISON1 = "/TLDRGarrison"
-SlashCmdList["TLDRGARRISON"] = function()
-    if TLDRGarrison.GUI.Frame then
-        TLDRGarrison.GUI.Frame:Show()
-    else
-        FunctionDebugPrint("TLDRGarrison frame not initialized")
-    end
-end
-
--- ========================
--- Initializing Handlers Section
--- ========================
-
--- Ensure the mission logic file is loaded (only once)
-local function LoadMissionLogic()
-    local success, err = pcall(function() LoadAddOn("MissionLogic") end)
-    if not success then
-        FunctionDebugPrint("Failed to load mission logic: " .. err)
-    else
-        FunctionDebugPrint("Mission logic successfully loaded")
-    end
-end
-
-local function InitializeGUIHandler()
-    LoadMissionLogic()  -- Load mission logic first
-
-    if not TLDRGarrison.GUI or not TLDRGarrison.GUI.mainFrame then
-        FunctionDebugPrint("Failed to load GUI or mainFrame is missing")
-        return
-    else
-        FunctionDebugPrint("GUI and mainFrame successfully loaded")
-    end
-
-    RegisterGarrisonEvents()  -- Set up Garrison events
-    SetButtonHandlers()       -- Set Start/Complete button handler
-    ToggleAdvancedFrame()     -- Set up advanced frame toggle logic
-end
-
--- Call the Initialize GUI Handler function
-InitializeGUIHandler()
+RegisterGarrisonEvents()

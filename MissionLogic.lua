@@ -1,21 +1,21 @@
 -- Initialize the MissionLogic table
-TLDRGarrison = TLDRGarrison or {}  -- Ensure the global table exists
-TLDRGarrison.MissionLogic = TLDRGarrison.MissionLogic or {}  -- Ensure the MissionLogic table exists
+local ML = TLDRG.MissionLogic or {}
+TLDRG.MissionLogic = ML
 
 -- Fetches and prints available missions
-function TLDRGarrison.MissionLogic.FetchAndPrintMissions()
+function ML.FetchAndPrintMissions()
     local missions = C_Garrison.GetAvailableMissions(1)  -- Replace 1 with appropriate followerTypeID for your case
     if type(missions) ~= "table" then
-        TLDRGarrison.DebugPrint("No missions available.")
+        TLDRG.DebugPrint("No missions available.")
         return nil
     end
 
-    TLDRGarrison.DebugPrint("Available Missions:")
+    TLDRG.DebugPrint("Available Missions:")
     for _, mission in ipairs(missions) do
         if mission and mission.missionID then  -- Ensure mission and mission.missionID are valid
-            TLDRGarrison.DebugPrint("Mission ID:", mission.missionID)
+            TLDRG.DebugPrint("Mission ID:", mission.missionID)
         else
-            TLDRGarrison.DebugPrint("Invalid mission entry found.")  -- Optional: debug for invalid entries
+            TLDRG.DebugPrint("Invalid mission entry found.")  -- Optional: debug for invalid entries
         end
     end
 
@@ -23,13 +23,13 @@ function TLDRGarrison.MissionLogic.FetchAndPrintMissions()
 end
 
 -- Fetch detailed mission information with filtering logic
-function TLDRGarrison.MissionLogic.FetchDetailedMissionInfo(missions, filterCriteria)
+function ML.FetchDetailedMissionInfo(missions, filterCriteria)
     local detailedMissions = {}
-    
+
     for _, mission in ipairs(missions) do
         if mission and mission.missionID then  -- Ensure the mission object and missionID exist
             local missionInfo = C_Garrison.GetBasicMissionInfo(mission.missionID)
-            
+
             if missionInfo then
                 local includeMission = false  -- Flag to decide if this mission should be included based on criteria
 
@@ -42,7 +42,7 @@ function TLDRGarrison.MissionLogic.FetchDetailedMissionInfo(missions, filterCrit
                         end
                     end
                 end
-                
+
                 if includeMission then
                     print("Mission ID:", missionInfo.missionID, "Name:", missionInfo.name)
 
@@ -60,7 +60,7 @@ function TLDRGarrison.MissionLogic.FetchDetailedMissionInfo(missions, filterCrit
                 end
             end
         else
-            TLDRGarrison.DebugPrint("Invalid mission entry found in FetchDetailedMissionInfo.")  -- Optional: debug for invalid entries
+            TLDRG.DebugPrint("Invalid mission entry found in FetchDetailedMissionInfo.")  -- Optional: debug for invalid entries
         end
     end
 
