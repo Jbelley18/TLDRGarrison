@@ -1,0 +1,247 @@
+local _, ns = ...
+local TLDG = ns.TLDRGarrison
+
+TLDG.FollowerData = {
+    -- Constants
+    MAX_FOLLOWER_LEVEL = 100,
+    MAX_FOLLOWER_ITEM_LEVEL = 675,
+    FOLLOWER_ITEM_LEVEL_BASE = 600,
+    
+    -- Cache of follower data
+    followers = {},
+    missionFollowers = {},
+}
+
+local FD = TLDG.FollowerData
+
+-- Initialize follower data management
+function FD:Initialize()
+    self:RegisterEvents()
+    self:RefreshFollowerData()
+end
+
+function FD:RegisterEvents()
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+    frame:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
+    frame:RegisterEvent("GARRISON_FOLLOWER_UPGRADED")
+    frame:SetScript("OnEvent", function(_, event, ...)
+        if self[event] then
+            self[event](self, ...)
+        end
+    end)
+end
+
+-- Event handlers
+function FD:GARRISON_FOLLOWER_LIST_UPDATE()
+    self:RefreshFollowerData()
+end
+
+function FD:GARRISON_FOLLOWER_XP_CHANGED(followerId, xpChange, oldXP, oldLevel)
+    self:UpdateFollowerXP(followerId, xpChange, oldXP, oldLevel)
+end
+
+function FD:GARRISON_FOLLOWER_UPGRADED(followerId)
+    self:RefreshFollowerData(followerId)
+end
+
+-- Data management functions
+function FD:RefreshFollowerData(specificFollowerId)
+    local followers = C_Garrison.GetFollowers(Enum.GarrisonFollowerType.FollowerType_6_0)
+    
+    if specificFollowerId then
+        -- Update specific follower
+        for i, follower in ipairs(followers) do
+            if follower.followerID == specificFollowerId then
+                self:ProcessFollowerData(follower)
+                break
+            end
+        end
+    else
+        -- Update all followers
+        self.followers = {}
+        for i, follower in ipairs(followers) do
+            self:ProcessFollowerData(follower)
+        end
+    end
+    
+    self:UpdateMissionTeams()
+end
+
+function FD:ProcessFollowerData(follower)
+    if not follower.isCollected then return end
+    
+    local followerId = follower.followerID
+    local data = {
+        id = followerId,
+        level = follower.level,
+        iLevel = follower.iLevel,
+        quality = follower.quality,
+        status = follower.status,
+        abilities = {},
+        counters = {},
+        traits = {},
+    }
+    
+    -- Process abilities
+    for i=1, 4 do
+        local abilityId = C_Garrison.GetFollowerAbilityAtIndex(followerId, i)
+        if abilityId then
+            if C_Garrison.GetFollowerAbilityIsTrait(abilityId) then
+                table.insert(data.traits, abilityId)
+            else
+                local counterInfo = C_Garrison.GetFollowerAbilityCounterMechanicInfo(abilityId)
+                if counterInfo then
+                    table.insert(data.counters, counterInfo)
+                end
+                table.insert(data.abilities, abilityId)
+            end
+        end
+    end
+    
+    -- Calculate effectiveness scores
+    data.effectiveLevel = self:CalculateEffectiveLevel(data)
+    data.counterScore = self:CalculateCounterScore(data)
+    
+    self.followers[followerId] = data
+end
+
+function FD:CalculateEffectiveLevel(followerData)
+    if followerData.level < self.MAX_FOLLOWER_LEVEL then
+        return followerData.level
+    else
+        return self.FOLLOWER_ITEM_LEVEL_BASE + followerData.iLevel
+    end
+end
+
+function FD:CalculateCounterScore(followerData)
+    local score = 0
+    local uniqueCounters = {}
+    
+    -- Score based on number and variety of counters
+    for _, counter in ipairs(followerData.counters) do
+        if not uniqueCounters[counter] then
+            uniqueCounters[counter] = true
+            score = score + 1
+        else
+            score = score + 0.5 -- Reduced value for duplicate counters
+        end
+    end
+    
+    -- Bonus for certain valuable traits
+    for _, trait in ipairs(followerData.traits) do
+        if self:IsValuableTrait(trait) then
+            score = score + 0.5
+        end
+    end
+    
+    return score
+end
+
+function FD:IsValuableTrait(traitId)
+    -- List of particularly valuable traits
+    local valuableTraits = {
+        [79] = true,  -- Extra Training
+        [236] = true, -- Epic Mount
+        [221] = true, -- Burst of Power
+    }
+    return valuableTraits[traitId] or false
+end
+
+function FD:GetAvailableFollowers()
+    local available = {}
+    for id, data in pairs(self.followers) do
+        if data.status == nil or data.status == GARRISON_FOLLOWER_IN_PARTY then
+            table.insert(available, data)
+        end
+    end
+    return available
+end
+
+function FD:GetFollowersByCounter(mechanicId)
+    local matching = {}
+    for _, data in pairs(self.followers) do
+        for _, counter in ipairs(data.counters) do
+            if counter == mechanicId then
+                table.insert(matching, data)
+                break
+            end
+        end
+    end
+    return matching
+end
+
+-- Team composition functions
+function FD:UpdateMissionTeams()
+    self.missionFollowers = {}
+    local available = self:GetAvailableFollowers()
+    
+    -- Sort by effectiveness
+    table.sort(available, function(a, b)
+        if a.effectiveLevel == b.effectiveLevel then
+            return a.counterScore > b.counterScore
+        end
+        return a.effectiveLevel > b.effectiveLevel
+    end)
+    
+    -- Store top performers for quick access
+    for i=1, min(#available, 20) do
+        table.insert(self.missionFollowers, available[i])
+    end
+end
+
+function FD:GetOptimalTeam(mission, requiredCounters)
+    local team = {}
+    local available = self:GetAvailableFollowers()
+    local neededCounters = requiredCounters or {}
+    
+    -- First pass: match required counters
+    for counterId in pairs(neededCounters) do
+        local bestFollower = self:GetBestFollowerForCounter(available, counterId)
+        if bestFollower then
+            table.insert(team, bestFollower)
+            self:RemoveFollowerFromAvailable(available, bestFollower.id)
+        end
+    end
+    
+    -- Second pass: fill remaining slots with highest effectiveness
+    while #team < mission.numFollowers and #available > 0 do
+        table.insert(team, table.remove(available, 1))
+    end
+    
+    return team
+end
+
+function FD:GetBestFollowerForCounter(availableFollowers, counterId)
+    local best = nil
+    local bestScore = -1
+    
+    for _, follower in ipairs(availableFollowers) do
+        for _, counter in ipairs(follower.counters) do
+            if counter == counterId then
+                local score = follower.effectiveLevel + follower.counterScore
+                if score > bestScore then
+                    best = follower
+                    bestScore = score
+                end
+                break
+            end
+        end
+    end
+    
+    return best
+end
+
+function FD:RemoveFollowerFromAvailable(available, followerId)
+    for i, follower in ipairs(available) do
+        if follower.id == followerId then
+            table.remove(available, i)
+            break
+        end
+    end
+end
+
+-- Initialize follower data management
+TLDG:RegisterCallback("OnInitialize", function()
+    FD:Initialize()
+end)
