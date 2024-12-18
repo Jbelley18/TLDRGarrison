@@ -5,13 +5,96 @@ TLDG.UI = {}
 local UI = TLDG.UI
 
 function UI:Initialize()
+    -- Wait for Blizzard_GarrisonUI to load
+    if not C_Garrison then
+        return
+    end
+    
+    local isLoaded = C_AddOns and C_AddOns.IsAddOnLoaded("Blizzard_GarrisonUI") or IsAddOnLoaded and IsAddOnLoaded("Blizzard_GarrisonUI")
+    
+    if isLoaded then
+        self:OnGarrisonUILoaded()
+    else
+        local frame = CreateFrame("Frame")
+        frame:RegisterEvent("ADDON_LOADED")
+        frame:SetScript("OnEvent", function(_, _, addonName)
+            if addonName == "Blizzard_GarrisonUI" then
+                self:OnGarrisonUILoaded()
+                frame:UnregisterAllEvents()
+            end
+        end)
+    end
+end
+
+function UI:OnGarrisonUILoaded()
+    if not GarrisonMissionFrame then return end
     self:CreateMainFrame()
     self:CreateMissionList()
     self:RegisterEvents()
 end
 
+function UI:UpdateDisplay()
+    -- Check if mainFrame exists
+    if not self.mainFrame or not self.mainFrame:IsShown() then return end
+    
+    -- Clear existing mission entries
+    for _, child in ipairs({self.missionList:GetChildren()}) do
+        child:Hide()
+    end
+    
+    -- Get prioritized missions
+    local missions = TLDG.MissionData:GetTopMissions(10)
+    
+    -- Create/update mission entries
+    local previousButton
+    for i, mission in ipairs(missions) do
+        local button = self.missionList:GetChildren()[i] or self:CreateMissionEntry(mission)
+        button:Show()
+        
+        if previousButton then
+            button:SetPoint("TOPLEFT", previousButton, "BOTTOMLEFT", 0, -5)
+        else
+            button:SetPoint("TOPLEFT", 5, -5)
+        end
+        
+        -- Update success chance if we have a team calculated
+        local team = TLDG.FollowerData:GetOptimalTeam(mission)
+        if team then
+            local chance = C_Garrison.GetMissionSuccessChance(mission.id)
+            button.successText:SetText(chance .. "%")
+            button.successText:SetTextColor(chance >= 90 and 0 or 1, chance >= 90 and 1 or 0, 0)
+        else
+            button.successText:SetText("")
+        end
+        
+        previousButton = button
+    end
+    
+    -- Update scrollchild height
+    if previousButton then
+        self.missionList:SetHeight(previousButton:GetBottom() * -1 + 10)
+    end
+    
+    -- Update status text
+    local numMissions = #missions
+    local numFollowers = #(TLDG.FollowerData:GetAvailableFollowers() or {})
+    self.mainFrame.statusText:SetText(string.format("%d missions available\n%d followers ready", numMissions, numFollowers))
+end
+
+-- Add these helper functions at the end
+function UI:IsReady()
+    return self.mainFrame ~= nil
+end
+
+function UI:EnsureLoaded()
+    if not self:IsReady() then
+        self:Initialize()
+    end
+end
+
+-- Rest of your MainFrame.lua code remains the same...
 function UI:CreateMainFrame()
-    local frame = CreateFrame("Frame", "TLDRGarrisonFrame", GarrisonMissionFrame)
+    local frame = CreateFrame("Frame", "TLDRGarrisonFrame", GarrisonMissionFrame, "BackdropTemplate")
     frame:SetSize(250, 500)
     frame:SetPoint("TOPLEFT", GarrisonMissionFrame, "TOPRIGHT", 5, 0)
     frame:SetClampedToScreen(true)
@@ -80,6 +163,28 @@ function UI:CreateMainFrame()
     GarrisonMissionFrame:HookScript("OnHide", OnGarrisonFrameHide)
 end
 
+-- Empty stub functions that will be implemented later
+function UI:CreateMissionList()
+end
+
+function UI:RegisterEvents()
+end
+
+function UI:UpdateDisplay()
+end
+
+function UI:StartAutoMissions()
+end
+
+function UI:ToggleSettings()
+end
+
+-- Initialize UI when the addon loads
+TLDG:RegisterCallback("OnInitialize", function()
+    UI:Initialize()
+end)
+
+-- Rest of your MainFrame.lua code remains the same...
 function UI:CreateMissionList()
     local frame = self.mainFrame
     

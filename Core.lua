@@ -8,7 +8,27 @@ function TLDG:OnLoad()
     TLDRGarrisonDB = self.db
     
     self:InitializeConfig()
-    self:InitializeUI()
+    
+    -- Initialize modules in correct order
+    if self.FollowerData then
+        self.FollowerData:Initialize()
+    end
+    
+    if self.MissionData then
+        self.MissionData:Initialize()
+    end
+    
+    if self.UI then
+        self.UI:Initialize()
+    end
+    
+    if self.FollowerList then
+        self.FollowerList:Initialize()
+    end
+    
+    if self.AutoComplete then
+        self.AutoComplete:Initialize()
+    end
     
     -- Register events
     local frame = CreateFrame("Frame")
@@ -27,15 +47,21 @@ end
 
 -- Core event handlers
 function TLDG:GARRISON_MISSION_NPC_OPENED()
-    self:UpdateMissionList()
+    if self.UI and self.UI.UpdateDisplay then
+        self.UI:UpdateDisplay()
+    end
 end
 
 function TLDG:GARRISON_MISSION_LIST_UPDATE()
-    self:UpdateMissionList()
+    if self.UI and self.UI.UpdateDisplay then
+        self.UI:UpdateDisplay()
+    end
 end
 
 function TLDG:GARRISON_FOLLOWER_LIST_UPDATE()
-    self:UpdateFollowerList()
+    if self.UI and self.UI.UpdateDisplay then
+        self.UI:UpdateDisplay()
+    end
 end
 
 -- Initialize addon

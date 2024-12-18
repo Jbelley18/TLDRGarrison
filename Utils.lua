@@ -26,6 +26,17 @@ do
     end)
 end
 
+-- Basic frame creation helper
+function Utils:CreateFrame(frameType, name, parent, template, id)
+    parent = parent or UIParent
+    local frame = CreateFrame(frameType, name, parent, template, id)
+    if parent and parent.GetFrameLevel then
+        frame:SetFrameStrata("MEDIUM")
+        frame:SetFrameLevel(parent:GetFrameLevel() + 1)
+    end
+    return frame
+end
+
 -- Callback registration system
 do
     local callbacks = {}

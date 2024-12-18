@@ -6,16 +6,16 @@
 ## SavedVariables: TLDRGarrisonDB
 ## X-Category: Garrison
 
-# Core files
+
 Core.lua
 Config.lua
 Utils.lua
 
-# Data files
+
 Data/MissionData.lua
 Data/FollowerData.lua
 
-# UI files
+
 UI/MainFrame.lua
 UI/MissionList.lua
 UI/FollowerList.lua

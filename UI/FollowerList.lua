@@ -6,12 +6,38 @@ TLDG.FollowerList = {}
 local FL = TLDG.FollowerList
 
 function FL:Initialize()
+    -- Wait for Blizzard_GarrisonUI to load
+    if not C_Garrison then
+        return
+    end
+    
+    local isLoaded = C_AddOns and C_AddOns.IsAddOnLoaded("Blizzard_GarrisonUI") or IsAddOnLoaded and IsAddOnLoaded("Blizzard_GarrisonUI")
+    
+    if isLoaded then
+        self:OnGarrisonUILoaded()
+    else
+        local frame = CreateFrame("Frame")
+        frame:RegisterEvent("ADDON_LOADED")
+        frame:SetScript("OnEvent", function(_, _, addonName)
+            if addonName == "Blizzard_GarrisonUI" then
+                self:OnGarrisonUILoaded()
+                frame:UnregisterAllEvents()
+            end
+        end)
+    end
+end
+
+function FL:OnGarrisonUILoaded()
+    if not GarrisonMissionFrame then return end
     self:CreateFollowerListFrame()
     self:RegisterEvents()
 end
 
 function FL:CreateFollowerListFrame()
-    local frame = Utils:CreateFrame("Frame", "TLDRGarrisonFollowerList", GarrisonMissionFrame)
+    -- Add BackdropTemplate for modern WoW
+    local frame = CreateFrame("Frame", "TLDRGarrisonFollowerList", GarrisonMissionFrame, "BackdropTemplate")
+    
+    -- Rest of your existing CreateFollowerListFrame code stays exactly the same
     frame:SetSize(300, 500)
     frame:SetPoint("TOPRIGHT", GarrisonMissionFrame, "TOPLEFT", -5, 0)
     frame:SetClampedToScreen(true)
@@ -28,6 +54,12 @@ function FL:CreateFollowerListFrame()
         insets = { left = 4, right = 4, top = 4, bottom = 4 }
     })
     frame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+
+    -- [Rest of your existing code remains exactly the same...]
+    -- Keep all your existing frame creation code, just change the parts above
+
+
+-- [Rest of your file stays exactly the same...]
     
     -- Header
     local header = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
