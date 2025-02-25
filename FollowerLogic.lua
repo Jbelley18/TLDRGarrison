@@ -33,6 +33,36 @@ local function GetMissionThreats(missionID)
     end
 end
 
+-- Basic testing selection
+function F.GetAvailableFollowers()
+    local followers = C_Garrison.GetFollowers(1)  -- Get WoD Garrison followers
+    local availableFollowers = {}
+
+    for _, follower in ipairs(followers) do
+        if follower.isCollected and not follower.status then  -- Ignore inactive/busy
+            table.insert(availableFollowers, follower)
+        end
+    end
+
+    return availableFollowers
+end
+
+function F.GetScavengerFollowers(followers)
+    local scavengers = {}
+
+    for _, follower in ipairs(followers) do
+        local traits = C_Garrison.GetFollowerAbilities(follower.followerID)
+        for _, trait in ipairs(traits) do
+            if trait.id == 221 then  -- Replace 221 with actual "Extreme Scavenger" ID
+                table.insert(scavengers, follower)
+                break
+            end
+        end
+    end
+
+    return scavengers
+end
+
 -- Function to find followers for a mission
 function F.FindFollowersForMission(missionID)
     print("Finding followers for mission ID:", missionID)
@@ -140,5 +170,73 @@ function F.MatchFollowersToMechanics(missionMechanics, followers, followerAbilit
         else
             FunctionDebugPrint("MatchFollowersToMechanics", "No counters found for mechanic: " .. mechanic.name)
         end
+    end
+end
+
+
+F.pendingMissions = {}  -- Store missions waiting for confirmation
+
+function F.AssignFollowersToGarrisonMissions()
+    local missions = TLDRG.FilterLogic.FilterMissionsForGarrisonResources(TLDRG.MissionLogic.FetchAndPrintMissions())
+
+    if #missions == 0 then
+        print("No Garrison Resource missions available.")
+        return
+    end
+
+    local availableFollowers = F.GetAvailableFollowers()
+    local scavengers = F.GetScavengerFollowers(availableFollowers)
+
+    for _, mission in ipairs(missions) do
+        print("Assigning Followers for Mission:", mission.name)
+
+        local assignedFollowers = {}
+
+        -- Step 1: Try to fill all slots with Extreme Scavenger followers
+        for _, scavenger in ipairs(scavengers) do
+            if #assignedFollowers < mission.numFollowers then
+                table.insert(assignedFollowers, scavenger)
+            end
+        end
+
+        -- Step 2: If more slots remain, add followers that counter the mission mechanics
+        if #assignedFollowers < mission.numFollowers then
+            local missionMechanics = TLDRG.FollowerTraits.GetMissionMechanics(mission.missionID)
+            for _, follower in ipairs(availableFollowers) do
+                if #assignedFollowers >= mission.numFollowers then
+                    break
+                end
+                for _, ability in ipairs(C_Garrison.GetFollowerAbilities(follower.followerID)) do
+                    for _, mechanic in ipairs(missionMechanics) do
+                        if ability.counters and ability.counters[mechanic.mechanicTypeID] then
+                            table.insert(assignedFollowers, follower)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
+        -- Step 3: Ensure the mission has max followers
+        while #assignedFollowers < mission.numFollowers and #availableFollowers > 0 do
+            table.insert(assignedFollowers, table.remove(availableFollowers))
+        end
+
+        -- Print assigned followers
+        if #assignedFollowers > 0 then
+            print("Assigned Followers:")
+            for _, follower in ipairs(assignedFollowers) do
+                print(" - " .. follower.name .. " (ID: " .. follower.followerID .. ")")
+            end
+
+            -- Store the mission and assigned followers for confirmation step
+            table.insert(F.pendingMissions, {missionID = mission.missionID, followers = assignedFollowers})
+        else
+            print("No followers assigned.")
+        end
+    end
+
+    if #F.pendingMissions > 0 then
+        print("Type /tldrgconfirm to start all assigned missions.")
     end
 end

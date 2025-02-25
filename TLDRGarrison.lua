@@ -6,6 +6,13 @@
 -- ===========================================
 -- Module Loading Section
 -- ===========================================
+local missions = TLDRG.MissionLogic.FetchAndPrintMissions()
+local garrisonMissions = TLDRG.FilterLogic.FilterMissionsForGarrisonResources(missions)
+
+print("Garrison Resource Missions Found:", #garrisonMissions)
+for _, mission in ipairs(garrisonMissions) do
+    print("Mission:", mission.name, "| ID:", mission.missionID, "| Duration:", mission.duration)
+end
 
 -- Check if the GUI module has been loaded
 if not TLDRG.GUI or not TLDRG.GUI.CreateMainFrame then

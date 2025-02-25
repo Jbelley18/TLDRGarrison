@@ -6,10 +6,13 @@ local ML = TLDRG.MissionLogic
 local FL = TLDRG.FilterLogic
 local FT = TLDRG.FollowerTraits
 
--- Verify that FollowerTraits is initialized
-if not FT or not FT.GetMissionMechanics then
-    print("Error: FT (FollowerTraits) or FT.GetMissionMechanics is not properly initialized.")
+if not FT then
+    TLDRG.FollowerTraits = {
+        GetMissionMechanics = function() return {} end
+    }
+    FT = TLDRG.FollowerTraits  -- Ensure FT gets the fallback
 end
+
 
 -- ========================
 -- Garrison Events Section

@@ -24,25 +24,29 @@ local rewardTypeMapping = {
 }
 
 -- Function to filter missions based on selected reward types from options
-function FL.FilterMissionsByRewardType(missions)
-    local selectedRewardTypes = TLDRG_SavedSettings.filterMissions  -- Fetch selected reward types from Ace3 options
+function FL.FilterMissionsForGarrisonResources(missions)
     local filteredMissions = {}
-    
     for _, mission in ipairs(missions) do
         local missionInfo = C_Garrison.GetBasicMissionInfo(mission.missionID)
         if missionInfo and missionInfo.rewards then
-            local hasValidReward = FL.CheckRewards(missionInfo.rewards, selectedRewardTypes)
-            if hasValidReward then
-                table.insert(filteredMissions, missionInfo)
+            for _, reward in pairs(missionInfo.rewards) do
+                if reward.currencyID == 824 then  -- 824 = Garrison Resources
+                    table.insert(filteredMissions, missionInfo)
+                    break
+                end
             end
         end
     end
-
     return filteredMissions
 end
 
--- Function to check if a mission's rewards match selected reward types
+
 function FL.CheckRewards(rewards, selectedRewardTypes)
+    if not selectedRewardTypes or next(selectedRewardTypes) == nil then
+        print("Error: No reward types selected or saved settings missing.")
+        return false  -- No reward types selected, return false
+    end
+
     for _, reward in pairs(rewards) do
         for rewardType, isSelected in pairs(selectedRewardTypes) do
             if isSelected and rewardTypeMapping[rewardType] and rewardTypeMapping[rewardType](reward) then
@@ -53,3 +57,4 @@ function FL.CheckRewards(rewards, selectedRewardTypes)
     end
     return false
 end
+
